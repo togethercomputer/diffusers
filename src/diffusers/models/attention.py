@@ -301,7 +301,7 @@ class CrossAttention(nn.Module):
     def _attention(self, query, key, value):
         batch_size = query.shape[0]
 
-        if not flash_attn_installed or batch_size * self.heads < 80 or query.dtype == torch.float32 or (self.dim_head > 128 or (self.dim_head % 8) != 0):
+        if not flash_attn_installed or query.dtype == torch.float32 or (self.dim_head > 128 or (self.dim_head % 8) != 0):
             query = self.reshape_heads_to_batch_dim(query)
             key = self.reshape_heads_to_batch_dim(key)
             value = self.reshape_heads_to_batch_dim(value)
