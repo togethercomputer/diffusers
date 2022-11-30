@@ -20,11 +20,24 @@ from torch import nn
 
 from einops import rearrange
 
+# TODO(danfu): upstream this to FlashAttention
+def check_cuda():
+    if not torch.cuda.is_available():
+        raise RuntimeError('CUDA is not available')
+    cur_device = torch.cuda.current_device()
+    dprops = torch.cuda.get_device_properties(cur_device)
+
+    is_sm75 = dprops.major == 7 and dprops.minor == 5
+    is_sm8x = dprops.major == 8 and dprops.minor >= 0
+
+    return is_sm8x or is_sm75
+
 try:
     from flash_attn.flash_attn_interface import flash_attn_unpadded_kvpacked_func
     from flash_attn.bert_padding import unpad_input, pad_input
     from flash_attn.flash_attention import FlashAttention
-    flash_attn_installed = True
+
+    flash_attn_installed = check_cuda()
 except ImportError:
     flash_attn_installed = False
 
