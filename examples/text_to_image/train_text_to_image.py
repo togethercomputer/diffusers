@@ -186,12 +186,12 @@ def parse_args():
     parser.add_argument(
         "--mixed_precision",
         type=str,
-        default="no",
+        default=None,
         choices=["no", "fp16", "bf16"],
         help=(
-            "Whether to use mixed precision. Choose"
-            "between fp16 and bf16 (bfloat16). Bf16 requires PyTorch >= 1.10."
-            "and an Nvidia Ampere GPU."
+            "Whether to use mixed precision. Choose between fp16 and bf16 (bfloat16). Bf16 requires PyTorch >="
+            " 1.10.and an Nvidia Ampere GPU.  Default to the value of accelerate config of the current system or the"
+            " flag passed with the `accelerate.launch` command. Use this argument to override the accelerate config."
         ),
     )
     parser.add_argument(
@@ -372,11 +372,7 @@ def main():
         weight_decay=args.adam_weight_decay,
         eps=args.adam_epsilon,
     )
-
-    # TODO (patil-suraj): load scheduler using args
-    noise_scheduler = DDPMScheduler(
-        beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000, tensor_format="pt"
-    )
+    noise_scheduler = DDPMScheduler.from_config(args.pretrained_model_name_or_path, subfolder="scheduler")
 
     # Get the datasets: you can either provide your own training and evaluation files (see below)
     # or specify a Dataset from the hub (the dataset will be downloaded automatically from the datasets Hub).
@@ -500,9 +496,9 @@ def main():
     )
 
     weight_dtype = torch.float32
-    if args.mixed_precision == "fp16":
+    if accelerator.mixed_precision == "fp16":
         weight_dtype = torch.float16
-    elif args.mixed_precision == "bf16":
+    elif accelerator.mixed_precision == "bf16":
         weight_dtype = torch.bfloat16
 
     # Move text_encode and vae to gpu.
@@ -609,9 +605,7 @@ def main():
             vae=vae,
             unet=unet,
             tokenizer=tokenizer,
-            scheduler=PNDMScheduler(
-                beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", skip_prk_steps=True
-            ),
+            scheduler=PNDMScheduler.from_config(args.pretrained_model_name_or_path, subfolder="scheduler"),
             safety_checker=StableDiffusionSafetyChecker.from_pretrained("CompVis/stable-diffusion-safety-checker"),
             feature_extractor=CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32"),
         )
