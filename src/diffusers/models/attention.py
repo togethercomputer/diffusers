@@ -541,15 +541,15 @@ class CrossAttention(nn.Module):
         self._use_memory_efficient_attention_xformers = False
 
         self.dim_head = dim_head
-        self.context_dim = context_dim
+        self.context_dim = cross_attention_dim
         self.query_dim = query_dim
 
         if self.context_dim == self.query_dim and self.dim_head <= 128 and (self.dim_head % 8) == 0 and flash_attn_installed:
             self.flash_attn = FlashAttention(self.scale)
 
         self.to_q = nn.Linear(query_dim, inner_dim, bias=False)
-        self.to_k = nn.Linear(context_dim, inner_dim, bias=False)
-        self.to_v = nn.Linear(context_dim, inner_dim, bias=False)
+        self.to_k = nn.Linear(cross_attention_dim, inner_dim, bias=False)
+        self.to_v = nn.Linear(cross_attention_dim, inner_dim, bias=False)
 
         self.to_out = nn.ModuleList([])
         self.to_out.append(nn.Linear(inner_dim, query_dim))
